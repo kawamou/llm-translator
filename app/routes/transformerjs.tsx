@@ -6,53 +6,42 @@ const createWorker = createWorkerFactory(() => import("./worker"));
 
 const Index = () => {
 	const worker = useWorker(createWorker);
-	const [ready, setReady] = useState(null);
-	const [disabled, setDisabled] = useState(false);
-
-	const [modelInitialized, setModelInitialized] = useState(false);
-	const [progressItems, setProgressItems] = useState([]);
-
-	const [input, setInput] = useState("I love walking my dog.");
-	const [output, setOutput] = useState("");
 
 	const [audio, setAudio] = useState<Blob | null>(null);
 	const [recording, setRecording] = useState(false);
-	const [transcription, setTranscription] = useState("");
 	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
 		null,
 	);
 
-	const useAutoSendAudio = (audio: Blob | null) => {
-		useEffect(() => {
-			if (audio) {
-				const sendDataToServer = async () => {
-					// https://github.com/xenova/transformers.js/blob/1f4ad161427ea878024708e999d9df2ab5c8b7d6/examples/webgpu-whisper/src/App.jsx#L171
-					const arrayBuffer = await audio.arrayBuffer();
-					const audioContext = new AudioContext({ sampleRate: 16000 * 30 });
-					const decoded = await audioContext.decodeAudioData(arrayBuffer);
-					const decodedAudio = decoded.getChannelData(0);
+	const [transcript, setTranscript] = useState("");
+	const [translatedText, setTranslatedText] = useState("");
 
-					try {
-						const url =
-							"https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/french-audio.mp3";
-						const result = await worker.stt(decodedAudio);
-						console.log(audio);
-						console.log(result);
-						// @ts-ignore
-						setTranscription(result.text);
-					} catch (err) {
-						console.error("Error sending audio data:", err);
-					}
-				};
+	useEffect(() => {
+		if (audio) {
+			StartSTT(audio);
+		}
+	}, [audio]);
 
-				sendDataToServer();
+	const StartSTT = async (targetAudio: Blob | null) => {
+		if (!targetAudio) {
+			return;
+		}
+		// https://github.com/xenova/transformers.js/blob/1f4ad161427ea878024708e999d9df2ab5c8b7d6/examples/webgpu-whisper/src/App.jsx#L171
+		const arrayBuffer = await targetAudio.arrayBuffer();
+		const audioContext = new AudioContext({ sampleRate: 16000 });
+		const decoded = await audioContext.decodeAudioData(arrayBuffer);
+		const decodedAudio = decoded.getChannelData(0);
 
-				setAudio(null);
-			}
-		}, [audio]);
+		try {
+			const result = await worker.stt(decodedAudio);
+			console.log(audio);
+			console.log(result);
+			// @ts-ignore
+			setTranscript(result.text);
+		} catch (err) {
+			console.error("Error sending audio data:", err);
+		}
 	};
-
-	useAutoSendAudio(audio);
 
 	const startRecording = async () => {
 		try {
@@ -95,29 +84,31 @@ const Index = () => {
 					{recording ? "Stop Recording" : "Start Recording"}
 				</button>
 				<p className="ml-4">
-					{transcription || "Translation will appear here..."}
+					{transcript || "Translation will appear here..."}
 				</p>
 			</div>
 
-			<div className="mb-4">
+			<div className="flex items-center mb-4">
 				<button
 					type="button"
-					className={`px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded min-w-40 ${
-						disabled ? "opacity-50 cursor-not-allowed" : ""
-					}`}
+					className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded min-w-40"
 					onClick={async () => {
+						console.log(transcript);
 						const output = await worker.translate(
-							input,
+							transcript,
 							"jpn_Jpan",
 							"eng_Latn",
 						);
 						console.log(output);
 						// @ts-ignore
-						setOutput(output[0].translation_text);
+						setTranslatedText(output[0].translation_text);
 					}}
 				>
 					Translate
 				</button>
+				<p className="ml-4">
+					{translatedText || "TranslatedText will appear here..."}
+				</p>
 			</div>
 
 			<div>
@@ -125,7 +116,8 @@ const Index = () => {
 					className="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 font-semibold rounded min-w-40"
 					type="button"
 					onClick={async () => {
-						const res = await worker.tts("こんにちは");
+						console.log(translatedText);
+						const res = await worker.tts(translatedText);
 						const audioRes = res.audio;
 						const sampleRate = res.sampling_rate;
 

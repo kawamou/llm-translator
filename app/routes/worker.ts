@@ -1,14 +1,9 @@
-import { pipeline } from "@xenova/transformers";
+import { env, pipeline } from "@xenova/transformers";
 import type {
-	PipelineType,
 	TranslationPipeline,
 	AutomaticSpeechRecognitionPipeline,
 	TextToAudioPipeline,
 } from "@xenova/transformers";
-
-export const hello = async (name: string) => {
-	return `Hello, ${name}!`;
-};
 
 let translationPipelineInstance: TranslationPipeline | null = null;
 let sttPipelineInstance: AutomaticSpeechRecognitionPipeline | null = null;
@@ -20,10 +15,10 @@ export const getTranslationPipelineSingleton = async (
 	if (translationPipelineInstance === null) {
 		const pipelineInstance = await pipeline(
 			"translation",
-			"Xenova/nllb-200-distilled-600M",
+			// "Xenova/nllb-200-distilled-600M", これデカすぎるかも？
+			"Xenova/opus-mt-ja-en",
 			{
 				progress_callback,
-				config: {},
 			},
 		);
 		translationPipelineInstance = pipelineInstance as TranslationPipeline;
@@ -38,11 +33,12 @@ export const translate = async (
 ) => {
 	const translator = await getTranslationPipelineSingleton(() => {});
 
-	const output = await translator(text, {
-		// @ts-ignore
-		tgt_lang,
-		src_lang,
-	});
+	// const output = await translator(text, {
+	// 	// @ts-ignore
+	// 	tgt_lang,
+	// 	src_lang,
+	// });
+	const output = await translator(text);
 	return output;
 };
 
@@ -64,9 +60,11 @@ export const getSTTPipelineSingleton = async (
 };
 
 export const stt = async (audio: Float32Array) => {
+	// audioを後々のデバッグのためにwavファイル形式で保存するコード↓
+
 	const stt = await getSTTPipelineSingleton(() => {});
 	const result = await stt(audio, {
-		language: "ja",
+		language: "ja", // nullでも自動検知らしい
 		task: "transcribe",
 	});
 	return result;
@@ -94,11 +92,8 @@ export const tts = async (text: string) => {
 	const tts = await getTTSPipelineSingleton(() => {});
 	const speaker_embeddings =
 		"https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin";
-	const result = await tts(
-		"Many people got together to talk about manga culture. こんにちは！よろしくね",
-		{
-			speaker_embeddings,
-		},
-	);
+	const result = await tts(text, {
+		speaker_embeddings,
+	});
 	return result;
 };
