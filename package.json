@@ -12,6 +12,7 @@
 		"typecheck": "tsc"
 	},
 	"dependencies": {
+		"@heroicons/react": "^2.1.4",
 		"@remix-run/node": "^2.9.2",
 		"@remix-run/react": "^2.9.2",
 		"@remix-run/serve": "^2.9.2",
