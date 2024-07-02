@@ -1,5 +1,7 @@
 # wip: llm-translator
 
+[demo(YouTube)](https://youtu.be/kQ8rXT_VhRM)
+
 ```sh
 npm run dev
 
