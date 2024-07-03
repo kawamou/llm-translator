@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useWorker } from "@shopify/react-web-worker";
 import { createWorkerFactory } from "@shopify/web-worker";
 
-const createWorker = createWorkerFactory(() => import("./worker"));
+const createWorker = createWorkerFactory(() => import("../webworker/worker"));
 
 const Index = () => {
 	const worker = useWorker(createWorker);
