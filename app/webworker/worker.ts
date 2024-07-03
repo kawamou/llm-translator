@@ -60,8 +60,6 @@ export const getSTTPipelineSingleton = async (
 };
 
 export const stt = async (audio: Float32Array) => {
-	// audioを後々のデバッグのためにwavファイル形式で保存するコード↓
-
 	const stt = await getSTTPipelineSingleton(() => {});
 	const result = await stt(audio, {
 		language: "ja", // nullでも自動検知らしい
